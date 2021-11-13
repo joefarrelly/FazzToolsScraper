@@ -1,0 +1,6 @@
+## Interface: 90105
+## Title: FazzToolsScraper
+## Author: Fazze @ EU-Doomhammer
+## SavedVariables: FazzToolsScraperDB
+
+core.lua
