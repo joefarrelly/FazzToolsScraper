@@ -8,6 +8,7 @@ local templateSavedVar = {
 
 local frame, events = CreateFrame("Frame"), {}
 
+
 function events:ADDON_LOADED(name)
     fs:Initialize(name)
 end

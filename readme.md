@@ -1,4 +1,4 @@
-# FazztTools Scraper WoW Addon
+# FazzTools Scraper WoW Addon
 
 ## Download
 
