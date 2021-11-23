@@ -2,7 +2,7 @@
 
 ## Download
 
-<https://www.curseforge.com/wow/addons/fazztoolsscraper>
+<https://www.curseforge.com/wow/addons/fazztools-scraper>
 
 ## Overview
 
