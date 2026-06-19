@@ -22,7 +22,7 @@ jobs:
           EXISTING=$(gh pr list \
             --repo "$REPO" \
             --base main \
-            --head "${OWNER}:dev" \
+            --head dev \
             --json number,body)
 
           PR_NUMBER=$(echo "$EXISTING" | jq -r '.[0].number // empty')
@@ -35,9 +35,9 @@ jobs:
               --title "dev into main" \
               --body "- $MERGED_BRANCH"
           else
-            BODY=$(echo "$EXISTING" | jq -r '.[0].body')
+            BODY=$(echo "$EXISTING" | jq -r '.[0].body // ""')
 
-            if echo "$BODY" | grep -qF "- $MERGED_BRANCH"; then
+            if echo "$BODY" | grep -qFe "- $MERGED_BRANCH"; then
               echo "Branch already listed, skipping."
             else
               gh pr edit "$PR_NUMBER" \
