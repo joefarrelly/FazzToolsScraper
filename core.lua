@@ -25,7 +25,7 @@ for k in pairs(events) do
 end
 
 
-function fs:Initialize(name)
+function fs.Initialize(_, name)
     if name == "FazzToolsScraper" then
         if FazzToolsScraperDB == nil then
             FazzToolsScraperDB = templateSavedVar
@@ -60,7 +60,7 @@ function fs:Initialize(name)
 end
 
 
-function fs:UpdateAlt()
+function fs.UpdateAlt(_)
     if IsSpellKnown(33388) then
         alt.ridingSkill = 1
     elseif IsSpellKnown(33391) then
@@ -74,7 +74,7 @@ function fs:UpdateAlt()
     end
 end
 
-function fs:SpecScan()
+function fs.SpecScan(_)
     local _, name = GetSpecializationInfo(GetSpecialization())
     alt.kb[name] = {}
     local numKeyBindings = GetNumBindings()
