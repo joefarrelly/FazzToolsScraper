@@ -13,7 +13,9 @@ jobs:
           persist-credentials: false
 
       - name: Install luacheck
-        run: sudo apt-get install -y luacheck
+        run: |
+          sudo apt-get install -y luarocks
+          sudo luarocks install luacheck
 
       - name: Luacheck
         run: |
@@ -27,4 +29,4 @@ jobs:
               GetSpellDescription GetSpellTexture \
               GetTalentInfo IsSpellKnown \
               UnitName GetRealmName GetAddOnInfo \
-              BOOKTYPE_SPELL
+              BOOKTYPE_SPELL FazzToolsScraperDB

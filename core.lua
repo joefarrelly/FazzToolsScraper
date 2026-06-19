@@ -1,21 +1,18 @@
 local fs = {}
 local alt
-local frame = CreateFrame("FRAME")
+local frame, events = CreateFrame("Frame"), {}
 
 local templateSavedVar = {
     alts = {},
 }
 
-local frame, events = CreateFrame("Frame"), {}
-
-
-function events:ADDON_LOADED(name)
+function events.ADDON_LOADED(_, name)
     fs:Initialize(name)
 end
-function events:PLAYER_LOGOUT()
+function events.PLAYER_LOGOUT(_)
     fs:UpdateAlt()
 end
-function events:PLAYER_SPECIALIZATION_CHANGED()
+function events.PLAYER_SPECIALIZATION_CHANGED(_)
     fs:SpecScan()
 end
 
@@ -23,18 +20,18 @@ frame:SetScript("OnEvent", function(self, event, ...)
     events[event](self, ...); -- call one of the functions above
 end);
 
-for k, v in pairs(events) do
+for k in pairs(events) do
     frame:RegisterEvent(k); -- Register all events for which handlers have been defined
 end
 
 
-function fs:Initialize(name)
+function fs.Initialize(_, name)
     if name == "FazzToolsScraper" then
         if FazzToolsScraperDB == nil then
             FazzToolsScraperDB = templateSavedVar
         end
 
-        altKey = UnitName("player") .. "-" .. GetRealmName()
+        local altKey = UnitName("player") .. "-" .. GetRealmName()
 
         alt = FazzToolsScraperDB.alts[altKey] or {}
         FazzToolsScraperDB.alts[altKey] = alt
@@ -47,9 +44,9 @@ function fs:Initialize(name)
         alt.macro = alt.macro or {}
         alt.item = alt.item or {}
 
-        _,_,_,dominos = GetAddOnInfo("Dominos")
-        _,_,_,bartender = GetAddOnInfo("Bartender4")
-        _,_,_,elvui = GetAddOnInfo("|cff1784d1ElvUI|r")
+        local dominos = select(4, GetAddOnInfo("Dominos"))
+        local bartender = select(4, GetAddOnInfo("Bartender4"))
+        local elvui = select(4, GetAddOnInfo("|cff1784d1ElvUI|r"))
         if dominos then
             alt.kbConfig.addon = "Dominos"
         elseif bartender then
@@ -63,7 +60,7 @@ function fs:Initialize(name)
 end
 
 
-function fs:UpdateAlt()
+function fs.UpdateAlt(_)
     if IsSpellKnown(33388) then
         alt.ridingSkill = 1
     elseif IsSpellKnown(33391) then
@@ -77,13 +74,15 @@ function fs:UpdateAlt()
     end
 end
 
-function fs:SpecScan()
-    id, name = GetSpecializationInfo(GetSpecialization())
+function fs.SpecScan(_)
+    local _, name = GetSpecializationInfo(GetSpecialization())
     alt.kb[name] = {}
     local numKeyBindings = GetNumBindings()
     for j = 1, numKeyBindings do
         local command = GetBinding(j)
-        if (string.find(command, "ACTION") or string.find(command, "Action")) and (string.find(command, "BUTTON") or string.find(command, "Button")) then
+        local hasAction = string.find(command, "ACTION") or string.find(command, "Action")
+        local hasButton = string.find(command, "BUTTON") or string.find(command, "Button")
+        if hasAction and hasButton then
             local keybind = GetBindingKey(command)
             if keybind then
                 alt.kbConfig.map[command] = keybind
@@ -91,36 +90,36 @@ function fs:SpecScan()
         end
     end
     for i = 1, 120 do
-        local actionType, id, _ = GetActionInfo(i)
+        local actionType, actionId, _ = GetActionInfo(i)
         local nilCheck = GetActionTexture(i)
         if nilCheck then
-            alt.kb[name][tostring(i)] = actionType .. ":" .. tostring(id)
+            alt.kb[name][tostring(i)] = actionType .. ":" .. tostring(actionId)
             if actionType == 'macro' then
-                local macroname,macroicon,macrobody = GetMacroInfo(id)
+                local macroname,macroicon,macrobody = GetMacroInfo(actionId)
                 if macroname then
-                    alt.macro[tostring(id)] = {macroname, macroicon, macrobody}
+                    alt.macro[tostring(actionId)] = {macroname, macroicon, macrobody}
                 end
             elseif actionType == 'item' then
-                local itemname,_,_,_,_,itemtype,_,_,_,itemicon = GetItemInfo(id)
+                local itemname,_,_,_,_,itemtype,_,_,_,itemicon = GetItemInfo(actionId)
                 if itemname then
-                    alt.item[tostring(id)] = {itemname, itemicon, itemtype}
+                    alt.item[tostring(actionId)] = {itemname, itemicon, itemtype}
                 end
             end
         end
     end
-    id, specname = GetSpecializationInfo(GetSpecialization())
+    local _, specname = GetSpecializationInfo(GetSpecialization())
     alt.spell[specname] = {}
     alt.spell[specname]["base"] = {}
     alt.spell[specname]["talent"] = {}
     for i = 1, 3 do
-        local name,_,offset,numSpells = GetSpellTabInfo(i)
+        local _,_,offset,numSpells = GetSpellTabInfo(i)
         for j = offset + 1, offset + numSpells do
             if not IsPassiveSpell(j, BOOKTYPE_SPELL) then
                 local spell,subspell,spellid = GetSpellBookItemName(j, BOOKTYPE_SPELL)
                 if spellid then
                     local spelldesc = GetSpellDescription(spellid)
                     local spellicon = GetSpellTexture(spellid)
-                    alt.spell[specname]["base"][spellid] =  {spell, subspell, spelldesc, spellicon}
+                    alt.spell[specname]["base"][spellid] = {spell, subspell, spelldesc, spellicon}
                 end
             end
         end
