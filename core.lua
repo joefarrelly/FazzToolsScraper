@@ -9,8 +9,15 @@ local templateSavedVar = {
 function events.ADDON_LOADED(_, name)
     fs:Initialize(name)
 end
+function events.PLAYER_LOGIN(_)
+    RequestTimePlayed()
+end
 function events.PLAYER_LOGOUT(_)
     fs:UpdateAlt()
+end
+function events.TIME_PLAYED_MSG(_, totalTime, levelTime)
+    alt.playedTimeTotal = totalTime
+    alt.playedTimeLevel = levelTime
 end
 
 frame:SetScript("OnEvent", function(self, event, ...)
@@ -19,6 +26,12 @@ end);
 
 for k in pairs(events) do
     frame:RegisterEvent(k); -- Register all events for which handlers have been defined
+end
+
+SLASH_FAZZTOOLSSCRAPER1 = "/fts"
+SlashCmdList.FAZZTOOLSSCRAPER = function()
+    fs:UpdateAlt()
+    print("FazzToolsScraper: alt data refreshed.")
 end
 
 
@@ -54,6 +67,34 @@ function fs.UpdateAlt(_)
     alt.gold = GetMoney()
     fs:UpdateCurrencies()
     fs:UpdateLockouts()
+    fs:UpdateKeystone()
+    fs:UpdateVault()
+end
+
+function fs.UpdateKeystone(_)
+    alt.keystoneMapID = C_MythicPlus.GetOwnedKeystoneChallengeMapID()
+    alt.keystoneLevel = C_MythicPlus.GetOwnedKeystoneLevel()
+end
+
+function fs.UpdateVault(_)
+    local vault = {}
+    local thresholdTypes = {
+        Enum.WeeklyRewardChestThresholdType.Activities,
+        Enum.WeeklyRewardChestThresholdType.Raid,
+        Enum.WeeklyRewardChestThresholdType.RankedPvP,
+    }
+    for _, thresholdType in ipairs(thresholdTypes) do
+        for _, activity in ipairs(C_WeeklyRewards.GetActivities(thresholdType)) do
+            vault[#vault + 1] = {
+                type = thresholdType,
+                index = activity.index,
+                threshold = activity.threshold,
+                progress = activity.progress,
+                level = activity.level,
+            }
+        end
+    end
+    alt.vault = vault
 end
 
 function fs.UpdateCurrencies(_)

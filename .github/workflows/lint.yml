@@ -30,4 +30,6 @@ jobs:
               GetTalentInfo IsSpellKnown \
               UnitName GetRealmName GetAddOnInfo \
               GetMoney C_CurrencyInfo GetNumSavedInstances GetSavedInstanceInfo \
+              C_MythicPlus C_WeeklyRewards Enum RequestTimePlayed \
+              SlashCmdList SLASH_FAZZTOOLSSCRAPER1 \
               BOOKTYPE_SPELL FazzToolsScraperDB
