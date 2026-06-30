@@ -1,4 +1,4 @@
-## Interface: 90105
+## Interface: 120007
 ## Title: FazzToolsScraper
 ## Author: Fazze @ EU-Doomhammer
 ## SavedVariables: FazzToolsScraperDB

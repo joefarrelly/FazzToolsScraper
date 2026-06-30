@@ -1,69 +1,57 @@
 local fs = {}
 local alt
-local frame = CreateFrame("FRAME")
+local frame, events = CreateFrame("Frame"), {}
 
 local templateSavedVar = {
     alts = {},
 }
 
-local frame, events = CreateFrame("Frame"), {}
-
-
-function events:ADDON_LOADED(name)
+function events.ADDON_LOADED(_, name)
     fs:Initialize(name)
 end
-function events:PLAYER_LOGOUT()
+function events.PLAYER_LOGIN(_)
+    RequestTimePlayed()
+end
+function events.PLAYER_LOGOUT(_)
     fs:UpdateAlt()
 end
-function events:PLAYER_SPECIALIZATION_CHANGED()
-    fs:SpecScan()
+function events.TIME_PLAYED_MSG(_, totalTime, levelTime)
+    alt.playedTimeTotal = totalTime
+    alt.playedTimeLevel = levelTime
 end
 
 frame:SetScript("OnEvent", function(self, event, ...)
     events[event](self, ...); -- call one of the functions above
 end);
 
-for k, v in pairs(events) do
+for k in pairs(events) do
     frame:RegisterEvent(k); -- Register all events for which handlers have been defined
 end
 
+SLASH_FAZZTOOLSSCRAPER1 = "/fts"
+SlashCmdList.FAZZTOOLSSCRAPER = function()
+    fs:UpdateAlt()
+    print("FazzToolsScraper: alt data refreshed.")
+end
 
-function fs:Initialize(name)
+
+function fs.Initialize(_, name)
     if name == "FazzToolsScraper" then
         if FazzToolsScraperDB == nil then
             FazzToolsScraperDB = templateSavedVar
         end
 
-        altKey = UnitName("player") .. "-" .. GetRealmName()
+        local altKey = UnitName("player") .. "-" .. GetRealmName()
 
         alt = FazzToolsScraperDB.alts[altKey] or {}
         FazzToolsScraperDB.alts[altKey] = alt
 
         alt.ridingSkill = 0
-        alt.kb = alt.kb or {}
-        alt.kbConfig = alt.kbConfig or {}
-        alt.kbConfig.map = alt.kbConfig.map or {}
-        alt.spell = alt.spell or {}
-        alt.macro = alt.macro or {}
-        alt.item = alt.item or {}
-
-        _,_,_,dominos = GetAddOnInfo("Dominos")
-        _,_,_,bartender = GetAddOnInfo("Bartender4")
-        _,_,_,elvui = GetAddOnInfo("|cff1784d1ElvUI|r")
-        if dominos then
-            alt.kbConfig.addon = "Dominos"
-        elseif bartender then
-            alt.kbConfig.addon = "Bartender"
-        elseif elvui then
-            alt.kbConfig.addon = "Elvui"
-        else
-            alt.kbConfig.addon = "Default"
-        end
     end
 end
 
 
-function fs:UpdateAlt()
+function fs.UpdateAlt(_)
     if IsSpellKnown(33388) then
         alt.ridingSkill = 1
     elseif IsSpellKnown(33391) then
@@ -75,65 +63,76 @@ function fs:UpdateAlt()
     elseif IsSpellKnown(90265) then
         alt.ridingSkill = 5
     end
+
+    alt.gold = GetMoney()
+    fs:UpdateCurrencies()
+    fs:UpdateLockouts()
+    fs:UpdateKeystone()
+    fs:UpdateVault()
 end
 
-function fs:SpecScan()
-    id, name = GetSpecializationInfo(GetSpecialization())
-    alt.kb[name] = {}
-    local numKeyBindings = GetNumBindings()
-    for j = 1, numKeyBindings do
-        local command = GetBinding(j)
-        if (string.find(command, "ACTION") or string.find(command, "Action")) and (string.find(command, "BUTTON") or string.find(command, "Button")) then
-            local keybind = GetBindingKey(command)
-            if keybind then
-                alt.kbConfig.map[command] = keybind
+function fs.UpdateKeystone(_)
+    alt.keystoneMapID = C_MythicPlus.GetOwnedKeystoneChallengeMapID()
+    alt.keystoneLevel = C_MythicPlus.GetOwnedKeystoneLevel()
+end
+
+function fs.UpdateVault(_)
+    local vault = {}
+    local thresholdTypes = {
+        Enum.WeeklyRewardChestThresholdType.Activities,
+        Enum.WeeklyRewardChestThresholdType.Raid,
+        Enum.WeeklyRewardChestThresholdType.RankedPvP,
+    }
+    for _, thresholdType in ipairs(thresholdTypes) do
+        for _, activity in ipairs(C_WeeklyRewards.GetActivities(thresholdType)) do
+            vault[#vault + 1] = {
+                type = thresholdType,
+                index = activity.index,
+                threshold = activity.threshold,
+                progress = activity.progress,
+                level = activity.level,
+            }
+        end
+    end
+    alt.vault = vault
+end
+
+function fs.UpdateCurrencies(_)
+    local currencies = {}
+    for i = 1, C_CurrencyInfo.GetCurrencyListSize() do
+        local info = C_CurrencyInfo.GetCurrencyListInfo(i)
+        if info and not info.isHeader then
+            local link = C_CurrencyInfo.GetCurrencyListLink(i)
+            local currencyID = link and tonumber(link:match("currency:(%d+)"))
+            if currencyID then
+                currencies[currencyID] = {
+                    name = info.name,
+                    quantity = info.quantity,
+                    maxQuantity = info.maxQuantity,
+                }
             end
         end
     end
-    for i = 1, 120 do
-        local actionType, id, _ = GetActionInfo(i)
-        local nilCheck = GetActionTexture(i)
-        if nilCheck then
-            alt.kb[name][tostring(i)] = actionType .. ":" .. tostring(id)
-            if actionType == 'macro' then
-                local macroname,macroicon,macrobody = GetMacroInfo(id)
-                if macroname then
-                    alt.macro[tostring(id)] = {macroname, macroicon, macrobody}
-                end
-            elseif actionType == 'item' then
-                local itemname,_,_,_,_,itemtype,_,_,_,itemicon = GetItemInfo(id)
-                if itemname then
-                    alt.item[tostring(id)] = {itemname, itemicon, itemtype}
-                end
-            end
+    alt.currencies = currencies
+end
+
+function fs.UpdateLockouts(_)
+    local lockouts = {}
+    for i = 1, GetNumSavedInstances() do
+        local name, id, reset, _, locked, extended, _, isRaid, _, difficultyName, numEncounters, encounterProgress =
+            GetSavedInstanceInfo(i)
+        if locked or extended then
+            lockouts[#lockouts + 1] = {
+                id = id,
+                name = name,
+                difficultyName = difficultyName,
+                reset = reset,
+                extended = extended,
+                isRaid = isRaid,
+                numEncounters = numEncounters,
+                encounterProgress = encounterProgress,
+            }
         end
     end
-    id, specname = GetSpecializationInfo(GetSpecialization())
-    alt.spell[specname] = {}
-    alt.spell[specname]["base"] = {}
-    alt.spell[specname]["talent"] = {}
-    for i = 1, 3 do
-        local name,_,offset,numSpells = GetSpellTabInfo(i)
-        for j = offset + 1, offset + numSpells do
-            if not IsPassiveSpell(j, BOOKTYPE_SPELL) then
-                local spell,subspell,spellid = GetSpellBookItemName(j, BOOKTYPE_SPELL)
-                if spellid then
-                    local spelldesc = GetSpellDescription(spellid)
-                    local spellicon = GetSpellTexture(spellid)
-                    alt.spell[specname]["base"][spellid] =  {spell, subspell, spelldesc, spellicon}
-                end
-            end
-        end
-    end
-    for i = 1, 7 do
-        for j = 1, 3 do
-            local _,spell,spellicon,_,_,spellid = GetTalentInfo(i, j, 1)
-            if spellid then
-                if not IsPassiveSpell(spellid) then
-                    local spelldesc = GetSpellDescription(spellid)
-                    alt.spell[specname]["talent"][spellid] = {spell, "", spelldesc, spellicon}
-                end
-            end
-        end
-    end
+    alt.lockouts = lockouts
 end
