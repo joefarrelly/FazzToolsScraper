@@ -29,4 +29,5 @@ jobs:
               GetSpellDescription GetSpellTexture \
               GetTalentInfo IsSpellKnown \
               UnitName GetRealmName GetAddOnInfo \
+              GetMoney C_CurrencyInfo GetNumSavedInstances GetSavedInstanceInfo \
               BOOKTYPE_SPELL FazzToolsScraperDB

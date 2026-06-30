@@ -50,4 +50,48 @@ function fs.UpdateAlt(_)
     elseif IsSpellKnown(90265) then
         alt.ridingSkill = 5
     end
+
+    alt.gold = GetMoney()
+    fs:UpdateCurrencies()
+    fs:UpdateLockouts()
+end
+
+function fs.UpdateCurrencies(_)
+    local currencies = {}
+    for i = 1, C_CurrencyInfo.GetCurrencyListSize() do
+        local info = C_CurrencyInfo.GetCurrencyListInfo(i)
+        if info and not info.isHeader then
+            local link = C_CurrencyInfo.GetCurrencyListLink(i)
+            local currencyID = link and tonumber(link:match("currency:(%d+)"))
+            if currencyID then
+                currencies[currencyID] = {
+                    name = info.name,
+                    quantity = info.quantity,
+                    maxQuantity = info.maxQuantity,
+                }
+            end
+        end
+    end
+    alt.currencies = currencies
+end
+
+function fs.UpdateLockouts(_)
+    local lockouts = {}
+    for i = 1, GetNumSavedInstances() do
+        local name, id, reset, _, locked, extended, _, isRaid, _, difficultyName, numEncounters, encounterProgress =
+            GetSavedInstanceInfo(i)
+        if locked or extended then
+            lockouts[#lockouts + 1] = {
+                id = id,
+                name = name,
+                difficultyName = difficultyName,
+                reset = reset,
+                extended = extended,
+                isRaid = isRaid,
+                numEncounters = numEncounters,
+                encounterProgress = encounterProgress,
+            }
+        end
+    end
+    alt.lockouts = lockouts
 end
