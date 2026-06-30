@@ -21,6 +21,12 @@ for k in pairs(events) do
     frame:RegisterEvent(k); -- Register all events for which handlers have been defined
 end
 
+SLASH_FAZZTOOLSSCRAPER1 = "/fts"
+SlashCmdList.FAZZTOOLSSCRAPER = function()
+    fs:UpdateAlt()
+    print("FazzToolsScraper: alt data refreshed.")
+end
+
 
 function fs.Initialize(_, name)
     if name == "FazzToolsScraper" then
